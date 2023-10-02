@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AngularPay Inquiries</title>
+    <link href="webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="main.css" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js?render=6LezoUEdAAAAAOhJMDU1X6juxzPsB9bHXcYUfCXe"></script>
+</head>
+<body>
+<noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being
+    enabled. Please enable
+    Javascript and reload this page!</h2></noscript>
+<div id="main-content" class="container">
+    <div class="row">
+        <div class="col">
+            <h1 class="display-4">AngularPay Inquiries</h1>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <form name='test-subscription-form' id='test-subscription-form' action="/inquiry" method="POST">
+                <div class="form-group">
+
+                    <div class="form-check">
+                        <input type="radio" id="investor_category" name="inquirer_category" value="INVESTOR">
+                        <label for="investor_category">Investor</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="radio" id="service_provider_category" name="inquirer_category" value="SERVICE_PROVIDER">
+                        <label for="service_provider_category">Service Provider</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="radio" id="financial_institution_category" name="inquirer_category" value="FINANCIAL_INSTITUTION">
+                        <label for="financial_institution_category">Financial Institution</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="radio" id="other_category" name="inquirer_category" value="OTHER">
+                        <label for="other_category">Other</label>
+                    </div>
+
+                    <label for="inquirer_name">Your name:</label>
+                    <input type="text" name="inquirer_name" id="inquirer_name" class="form-control"
+                           placeholder="Enter your full name">
+
+                    <label for="inquirer_email">Your email:</label>
+                    <input type="text" name="inquirer_email" id="inquirer_email" class="form-control"
+                           placeholder="Enter your email">
+
+                    <label for="inquirer_phone">Your phone:</label>
+                    <input type="text" name="inquirer_phone" id="inquirer_phone" class="form-control"
+                           placeholder="Enter your phone number">
+
+                    <label for="inquiry_subject">Subject:</label>
+                    <input type="text" name="inquiry_subject" id="inquiry_subject" class="form-control"
+                           placeholder="Enter your inquiry subject">
+
+                    <label for="inquiry_message">Message:</label>
+                    <textarea name="inquiry_message" id="inquiry_message" class="form-control"
+                              placeholder="Enter your inquiry message" rows="4"></textarea>
+
+                </div>
+                <button class="btn btn-light" id="submit-inquiry-button" type="submit">Submit Inquiry!</button>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <h3 class="h3 text-muted" id="subscriptions_response"></h3>
+        </div>
+    </div>
+</div>
+<script>
+    document.getElementById("submit-inquiry-button").onclick = function (e) {
+        e.preventDefault();
+
+        const subscriptions_response = document.getElementById("subscriptions_response");
+        subscriptions_response.innerText = "Submitting...";
+        subscriptions_response.classList.remove("text-danger");
+        subscriptions_response.classList.remove("text-success");
+        subscriptions_response.classList.add("text-muted");
+
+        grecaptcha.ready(function () {
+            grecaptcha.execute('6LezoUEdAAAAAOhJMDU1X6juxzPsB9bHXcYUfCXe', {action: 'inquiry'})
+                .then(function (token) {
+                    const headers = new Headers();
+                    headers.append("Content-Type", "application/json");
+
+                    const request = JSON.stringify({
+                        "inquirer_name": document.getElementById("inquirer_name").value,
+                        "email": document.getElementById("inquirer_email").value,
+                        "phone": document.getElementById("inquirer_phone").value,
+                        "subject": document.getElementById("inquiry_subject").value,
+                        "message": document.getElementById("inquiry_message").value,
+                        "category": document.querySelector('input[name="inquirer_category"]:checked').value,
+                        "recaptcha": {
+                            "recaptcha_token": token,
+                            "action_name": "inquiry"
+                        }
+                    });
+
+                    const options = {
+                        method: 'POST',
+                        headers: headers,
+                        body: request
+                    };
+
+                    fetch("/inquiries/partners", options)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw response;
+                            }
+                            return response.json();
+                        })
+                        .then(result => {
+                            console.log(result);
+                            subscriptions_response.innerText = "Inquiry submitted successfully!";
+                            subscriptions_response.classList.remove("text-muted");
+                            subscriptions_response.classList.remove("text-danger");
+                            subscriptions_response.classList.add("text-success");
+                        })
+                        .catch(error => {
+                            console.log('error', error);
+                            subscriptions_response.innerText = "Inquiry submission failed! Please try again!";
+                            subscriptions_response.classList.remove("text-muted");
+                            subscriptions_response.classList.remove("text-success");
+                            subscriptions_response.classList.add("text-danger");
+                        });
+                });
+        });
+    };
+</script>
+</body>
+</html>
